@@ -1,13 +1,27 @@
 package com.tk.learn
 
+import com.sksamuel.hoplite.ConfigLoaderBuilder
+import com.sksamuel.hoplite.addResourceSource
 import io.javalin.Javalin
 import io.javalin.http.Context
 
 val log = org.slf4j.LoggerFactory.getLogger("Main")!!
 
+
+
 fun main() {
+
+    val appConfig = ConfigLoaderBuilder.default()
+        .addResourceSource("/application.yaml", optional = true)
+        .build()
+        .loadConfigOrThrow<AppConfig>()
+
+
+    log.info("Config is ${appConfig.database} ")
+
+
     //Initializing the h2 database using exposed kotlin framework
-    Db.init()
+    Db.init(appConfig.database)
 
     Javalin.create{
         it.contextResolver.ip = { ctx -> ctx.header("X-Forwarded-For") ?: ctx.req().remoteAddr }

@@ -11,13 +11,13 @@ object Users : Table("users") {
 }
 
 object Db {
-    fun init() {
+    fun init(databaseConfig: DatabaseConfig) {
         // Connect to in-memory H2 database
         Database.connect(
-            url = "jdbc:h2:mem:test;DB_CLOSE_DELAY=-1;MODE=PostgreSQL",
-            driver = "org.h2.Driver",
-            user = "sa",
-            password = ""
+            url = databaseConfig.url,
+            driver = databaseConfig.driver,
+            user = databaseConfig.username,
+            password = databaseConfig.password
         )
         transaction {
             SchemaUtils.create(Users)
@@ -55,4 +55,3 @@ object Db {
     }
 }
 
-data class User(val userId: Int, val name: String)

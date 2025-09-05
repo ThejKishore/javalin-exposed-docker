@@ -67,5 +67,3 @@ fun deleteUser(ctx: Context) {
         ctx.status(204)
 }
 
-data class CreateUserRequest(val name: String)
-data class UpdateUserRequest(val name: String)
