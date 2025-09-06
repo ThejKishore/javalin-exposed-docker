@@ -19,15 +19,10 @@ object Db {
             user = databaseConfig.username,
             password = databaseConfig.password
         )
-        transaction {
-            SchemaUtils.create(Users)
-            // seed one row if empty
-            if (Users.selectAll().empty()) {
-                Users.insert { it[name] = "Alice" }
-                Users.insert { it[name] = "Bob" }
-            }
-        }
+        initializeData()
     }
+
+
 
     // Overload for tests: use default in-memory config
     fun init() {
@@ -39,6 +34,18 @@ object Db {
                 password = ""
             )
         )
+        initializeData()
+    }
+
+    private fun initializeData() {
+        transaction {
+            SchemaUtils.create(Users)
+            // seed one row if empty
+            if (Users.selectAll().empty()) {
+                Users.insert { it[name] = "Alice" }
+                Users.insert { it[name] = "Bob" }
+            }
+        }
     }
 
     fun listUsers(): List<User> = transaction {

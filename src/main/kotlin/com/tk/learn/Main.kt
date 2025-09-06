@@ -3,9 +3,8 @@ package com.tk.learn
 import com.sksamuel.hoplite.ConfigLoaderBuilder
 import com.sksamuel.hoplite.addResourceSource
 import io.javalin.Javalin
-import io.javalin.http.Context
 import io.javalin.http.HttpStatus
-import io.javalin.openapi.*
+import io.javalin.openapi.OpenApiInfo
 import io.javalin.openapi.plugin.OpenApiPlugin
 import io.javalin.openapi.plugin.redoc.ReDocPlugin
 import io.javalin.openapi.plugin.swagger.SwaggerPlugin
@@ -22,16 +21,14 @@ fun main() {
 
 
     log.info("Config is ${appConfig.database} ")
-
-
     //Initializing the h2 database using exposed kotlin framework
     Db.init(appConfig.database)
 
     //Registering the promethus and setting it in MicrometerPlugin
-    val registry = MetricsConfig.registerPrometheus()
-    val micrometerPlugin = MetricsConfig.registerMetrics(registry)
+    val registry = registerPrometheus()
+    val micrometerPlugin = registerMetrics(registry)
 
-    Javalin.create { config ->
+    val app = Javalin.create { config ->
         config.contextResolver.ip = { ctx -> ctx.header("X-Forwarded-For") ?: ctx.req().remoteAddr }
         config.router.treatMultipleSlashesAsSingleSlash = true
         config.router.ignoreTrailingSlashes = true
@@ -41,7 +38,6 @@ fun main() {
         }
         config.useVirtualThreads = true
         config.showJavalinBanner = false
-
 
         config.registerPlugin(OpenApiPlugin { pluginConfig ->
             pluginConfig.withDefinitionConfiguration { version, definition ->
@@ -62,24 +58,18 @@ fun main() {
         exception(Exception::class.java) { e, ctx -> e.printStackTrace() }
         error(HttpStatus.NOT_FOUND) { ctx -> ctx.json("not found") }
     }.start(7070)
-        .get("/"){ctx -> ctx.result("Hello World")}
-        .get("/users", ::fetchUsers)
-        .get("/users/{id}", ::getUserById)
-        .post("/users", ::createUser)
-        .put("/users/{id}", ::updateUser)
-        .delete("/users/{id}", ::deleteUser)
-        .get("/test/{name}"){ ctx ->
-            val name = ctx.pathParam("name")
-            ctx.result("Hello $name")
-        }
-        .get("/prometheus"){
-            ctx -> ctx.contentType("text/plain; version=0.0.4; charset=utf-8")
-                .result(registry.scrape())
-        }
 
+    //Registering the routes
+    Routes.registerRoutes(app, registry)
+
+    //Displaying the server started message displaying the unprotected server url for quick check
+    log.info("Check out Openapi.json at http://localhost:7070/javalin/api/openapi")
     log.info("Check out ReDoc docs at http://localhost:7070/javalin/api/redoc")
     log.info("Check out Swagger UI docs at http://localhost:7070/javalin/api/swagger")
     log.info("Check out Prometheus scrap endpoint http://localhost:7070/javalin/api/prometheus")
+    log.info("Check out Prometheus scrap endpoint http://localhost:7070/javalin/api/health")
+    log.info("Check out Prometheus scrap endpoint http://localhost:7070/javalin/api/liveness")
+    log.info("Check out Prometheus scrap endpoint http://localhost:7070/javalin/api/readiness")
 
 }
 
