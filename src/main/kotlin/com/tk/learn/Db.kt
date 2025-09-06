@@ -29,6 +29,18 @@ object Db {
         }
     }
 
+    // Overload for tests: use default in-memory config
+    fun init() {
+        init(
+            DatabaseConfig(
+                url = "jdbc:h2:mem:test;DB_CLOSE_DELAY=-1;MODE=PostgreSQL",
+                driver = "org.h2.Driver",
+                username = "sa",
+                password = ""
+            )
+        )
+    }
+
     fun listUsers(): List<User> = transaction {
         Users.selectAll().map { User(it[Users.id], it[Users.name]) }
     }
