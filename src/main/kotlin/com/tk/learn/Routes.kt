@@ -4,34 +4,26 @@ import io.javalin.Javalin
 import io.javalin.http.Context
 import io.micrometer.prometheusmetrics.PrometheusMeterRegistry
 
-
 object Routes {
-    fun registerRoutes(app: Javalin, registry: PrometheusMeterRegistry) {
-        // Home
-        app.get("/") { ctx: Context -> ctx.result("Hello World") }
 
-        // User routes
-        app.get("/users", UserRoutes::fetchUsers)
-        app.get("/users/{id}", UserRoutes::getUserById)
-        app.post("/users", UserRoutes::createUser)
-        app.put("/users/{id}", UserRoutes::updateUser)
-        app.delete("/users/{id}", UserRoutes::deleteUser)
+        fun registerRoutes(app: Javalin, registry: PrometheusMeterRegistry) {
+            val kubeRoutes = KubeRoutes(registry)
+            app.get("/") { ctx: Context -> ctx.result("Hello World") }
 
-        // Misc
-        app.get("/test/{name}") { ctx ->
-            val name = ctx.pathParam("name")
-            ctx.result("Hello $name")
+            val userById = "/users/{id}"
+            // User routes
+            app.get("/users", UserRoutes::fetchUsers)
+            app.get(userById, UserRoutes::getUserById)
+            app.post("/users", UserRoutes::createUser)
+            app.put(userById, UserRoutes::updateUser)
+            app.delete(userById, UserRoutes::deleteUser)
+
+
+            // Kubernetes health endpoints
+            // Prometheus metrics
+            app.get("/prometheus",kubeRoutes::prometheusScrape)
+            app.get("/health",kubeRoutes::health)
+            app.get("/liveness",kubeRoutes::liveness)
+            app.get("/readiness",kubeRoutes::readiness)
         }
-
-        // Prometheus metrics
-        app.get("/prometheus") { ctx ->
-            ctx.contentType("text/plain; version=0.0.4; charset=utf-8")
-                .result(registry.scrape())
-        }
-
-        // Kubernetes health endpoints
-        app.get("/health", KubeRoutes::health)
-        app.get("/liveness", KubeRoutes::liveness)
-        app.get("/readiness", KubeRoutes::readiness)
-    }
 }

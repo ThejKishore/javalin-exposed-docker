@@ -1,8 +1,8 @@
 plugins {
     id 'java'
-    alias(libs.plugins.kotlin.jvm)
-    alias(libs.plugins.shadow)
-    alias(libs.plugins.kotlin.kapt)
+    id 'org.jetbrains.kotlin.jvm' version '2.2.20-RC2'
+    id 'com.github.johnrengelman.shadow' version '8.1.1'
+    id "org.jetbrains.kotlin.kapt" version "2.2.20-RC2"
 }
 
 group = 'com.tk.learn'
@@ -11,7 +11,6 @@ version = '1.0-SNAPSHOT'
 repositories {
     mavenCentral()
 }
-
 
 java {
     toolchain {
@@ -23,52 +22,51 @@ kotlin {
     jvmToolchain(21)
 }
 
+def javalinVer = "6.7.0"
+def openapi = "6.7.0-1"
 
 
 dependencies {
-    implementation(libs.javalin)
+    implementation("io.javalin:javalin:$javalinVer")
+    implementation("org.slf4j:slf4j-simple:2.0.16")
 
     // Kotlin stdlib
-    implementation(libs.kotlin.stdlib)
+    implementation("org.jetbrains.kotlin:kotlin-stdlib:2.2.20-RC2")
 
     // Exposed jdbc
-    implementation(libs.exposed.core)
-    implementation(libs.exposed.jdbc)
+    implementation("org.jetbrains.exposed:exposed-core:0.55.0")
+    implementation("org.jetbrains.exposed:exposed-jdbc:0.55.0")
 
     // H2 Database
-    runtimeOnly(libs.h2)
-
-    //logging
-    implementation(libs.slf4j.simple)
-
+    runtimeOnly("com.h2database:h2:2.2.224")
 
     // Config from hoplite
-    implementation(libs.hoplite.core)
-    implementation(libs.hoplite.yaml)
+    implementation "com.sksamuel.hoplite:hoplite-core:2.9.0"
+    implementation "com.sksamuel.hoplite:hoplite-yaml:2.9.0"
 
-    // Validator
-    implementation(libs.valiktor.core)
+    //Validator
+    implementation "org.valiktor:valiktor-core:0.12.0"
 
-    // OpenApi3
-    kapt(libs.openapi.processor)
+    //OpenApi3
+    kapt("io.javalin.community.openapi:openapi-annotation-processor:$openapi")
 
-    implementation(libs.javalin.openapi.plugin) // for /openapi route with JSON scheme
-    implementation(libs.javalin.swagger.plugin) // for Swagger UI
-    implementation(libs.javalin.redoc.plugin)
+    implementation("io.javalin.community.openapi:javalin-openapi-plugin:$openapi") // for /openapi route with JSON scheme
+    implementation("io.javalin.community.openapi:javalin-swagger-plugin:$openapi") // for Swagger UI
+    implementation("io.javalin.community.openapi:javalin-redoc-plugin:$openapi")
 
-    // Micrometer and prometheus
-    implementation(libs.javalin.micrometer)
-    implementation(libs.micrometer.prometheus)
+    //Micrometer and prometheus
+    implementation("io.javalin:javalin-micrometer:$javalinVer")
+    implementation("io.micrometer:micrometer-registry-prometheus:1.15.3")
 
     // JSON
-    implementation(libs.jackson.databind)
-    implementation(libs.jackson.module.kotlin)
+    implementation("com.fasterxml.jackson.core:jackson-databind:2.17.2")
+    implementation("com.fasterxml.jackson.module:jackson-module-kotlin:2.17.2")
 
     // Test
-    testImplementation(platform(libs.junit.bom))
-    testImplementation(libs.junit.jupiter)
-    testImplementation(libs.mockk)
-    testRuntimeOnly(libs.junit.platform.launcher)
+    testImplementation platform('org.junit:junit-bom:5.10.0')
+    testImplementation 'org.junit.jupiter:junit-jupiter'
+    testImplementation "io.mockk:mockk:1.13.11"
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 }
 
 test {

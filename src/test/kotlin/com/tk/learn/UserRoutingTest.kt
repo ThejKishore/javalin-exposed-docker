@@ -1,5 +1,9 @@
 package com.tk.learn
 
+import com.tk.learn.UserRoutes.createUser
+import com.tk.learn.UserRoutes.deleteUser
+import com.tk.learn.UserRoutes.getUserById
+import com.tk.learn.UserRoutes.updateUser
 import io.javalin.http.Context
 import io.mockk.*
 import org.jetbrains.exposed.sql.SchemaUtils

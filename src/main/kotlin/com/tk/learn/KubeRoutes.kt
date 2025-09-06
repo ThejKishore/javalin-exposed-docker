@@ -1,10 +1,11 @@
 package com.tk.learn
 
 import io.javalin.http.Context
+import io.micrometer.prometheusmetrics.PrometheusMeterRegistry
 import org.jetbrains.exposed.sql.selectAll
 import org.jetbrains.exposed.sql.transactions.transaction
 
-object KubeRoutes {
+class KubeRoutes(val registry: PrometheusMeterRegistry) {
 
     fun health(ctx: Context){
         ctx.json(mapOf("status" to "UP"))
@@ -24,5 +25,10 @@ object KubeRoutes {
         } catch (e: Exception) {
             ctx.status(503).json(mapOf("status" to "NOT_READY", "reason" to (e.message ?: "DB error")))
         }
+    }
+
+    fun prometheusScrape(ctx: Context) {
+        ctx.contentType("text/plain; version=0.0.4; charset=utf-8")
+            .result(registry.scrape())
     }
 }
