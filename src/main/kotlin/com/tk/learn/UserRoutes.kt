@@ -4,6 +4,8 @@ import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.fasterxml.jackson.module.kotlin.readValue
 import io.javalin.http.Context
 import io.javalin.openapi.*
+import org.jdbi.v3.core.Handle
+import org.jdbi.v3.core.kotlin.mapTo
 
 private val json = jacksonObjectMapper()
 
@@ -25,12 +27,17 @@ object UserRoutes {
     fun getUserById(ctx: Context) {
         val id = ctx.pathParam("id").toIntOrNull()
         if (id == null) {
-            ctx.status(400).json(mapOf("error" to "Invalid id"))
-            return
+            throw ApiException.BadRequest("Invalid id")
         }
-        val user = Db.getUser(id)
+        val user = AppJdbi.getJdbi().withHandle<User?,Exception> {
+            it.createQuery("select id as userId, name from users where id = :id")
+                    .bind("id", id)
+                    .mapTo<User>()
+                    .findOne()
+                    .orElse(null)
+            }
         if (user == null)
-            ctx.status(404).json(mapOf("error" to "User not found"))
+            throw ApiException.NotFound("User not found")
         else
             ctx.json(user)
     }
@@ -49,15 +56,13 @@ object UserRoutes {
         val body = try {
             json.readValue<CreateUserRequest>(ctx.body())
         } catch (e: Exception) {
-            ctx.status(400).json(mapOf("error" to "Invalid JSON body")); return
+            throw ApiException.BadRequest("Invalid JSON body", cause = e)
         }
         val name = body.name.trim()
         if (name.isBlank()) {
-            ctx.status(400).json(mapOf("error" to "Name must not be blank"));
-            return
+            throw ApiException.Validation(details = listOf(ValidationError("name", "must not be blank", "NotBlank")))
         }
-        val user = Db.createUser(name)
-        ctx.header("Location", "/javalin/api/users/${user.userId}")
+        val user = AppJdbi.getJdbi().withHandle <ResultCodeUser,Exception> { h -> createUserDb(h, name) }
         ctx.status(201).json(user)
     }
 
@@ -75,23 +80,19 @@ object UserRoutes {
     )
     fun updateUser(ctx: Context) {
         val id = ctx.pathParam("id").toIntOrNull()
-        if (id == null) {
-            ctx.status(400).json(mapOf("error" to "Invalid id")); return
-        }
+        if (id == null) { throw ApiException.BadRequest("Invalid id") }
         val body = try {
             json.readValue<UpdateUserRequest>(ctx.body())
         } catch (e: Exception) {
-            ctx.status(400).json(mapOf("error" to "Invalid JSON body"));
-            return
+            throw ApiException.BadRequest("Invalid JSON body", cause = e)
         }
         val name = body.name.trim()
         if (name.isBlank()) {
-            ctx.status(400).json(mapOf("error" to "Name must not be blank"));
-            return
+            throw ApiException.Validation(details = listOf(ValidationError("name", "must not be blank", "NotBlank")))
         }
-        val updated = Db.updateUser(id, name)
-        if (updated == null)
-            ctx.status(404).json(mapOf("error" to "User not found"))
+        val updated = AppJdbi.getJdbi().withHandle<ResultCode, Exception> { h -> updateUser(h, id, name) }
+        if (updated.code <= 0)
+            throw ApiException.NotFound("User not found")
         else
             ctx.json(updated)
     }
@@ -109,13 +110,10 @@ object UserRoutes {
     )
     fun deleteUser(ctx: Context) {
         val id = ctx.pathParam("id").toIntOrNull()
-        if (id == null) {
-            ctx.status(400).json(mapOf("error" to "Invalid id"));
-            return
-        }
-        val deleted = Db.deleteUser(id)
-        if (!deleted)
-            ctx.status(404).json(mapOf("error" to "User not found"))
+        if (id == null) { throw ApiException.BadRequest("Invalid id") }
+        val deleted = AppJdbi.getJdbi().withHandle<ResultCode, Exception> { h -> deleteUser(h, id) }
+        if (deleted.code <= 0)
+            throw ApiException.NotFound("User not found")
         else
             ctx.status(204)
     }
@@ -130,7 +128,39 @@ object UserRoutes {
         ]
     )
     fun fetchUsers(ctx: Context) {
-        ctx.json(Db.listUsers())
+        ctx.json(AppJdbi.getJdbi().withHandle <List<User>,Exception> {
+                    it.createQuery("select id as userId, name from users")
+                        .mapTo<User>()
+                        .list()
+                })
     }
-}
 
+
+    fun createUserDb(handle: Handle, name: String): ResultCodeUser{
+        val id = handle.createUpdate("INSERT INTO users (name) VALUES (:name)")
+            .bind("name", name)
+            .executeAndReturnGeneratedKeys("id")
+            .mapTo<Int>()
+            .one()
+        return ResultCodeUser(user = User(id, name))
+    }
+
+    fun updateUser(handle: Handle, id: Int, name: String): ResultCode {
+        val rowsUpdated = handle.createUpdate("UPDATE users SET name = :name WHERE id = :id")
+            .bind("id", id)
+            .bind("name", name)
+            .execute()
+
+        return ResultCode(rowsUpdated)
+    }
+
+    fun deleteUser(handle: Handle, id: Int): ResultCode {
+        val rowsUpdated = handle.createUpdate("delete from users where id = :id")
+            .bind("id", id)
+            .execute()
+        return ResultCode( rowsUpdated)
+    }
+
+    data class ResultCode(val code: Int)
+    data class ResultCodeUser(val user: User)
+}

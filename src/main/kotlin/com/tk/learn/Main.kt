@@ -22,7 +22,8 @@ fun main() {
 
     log.info("Config is ${appConfig.database} ")
     //Initializing the h2 database using exposed kotlin framework
-    Db.init(appConfig.database)
+    AppJdbi.init(appConfig.database)
+    AppJdbi.createSchema()
 
     //Registering the promethus and setting it in MicrometerPlugin
     val registry = registerPrometheus()
@@ -55,8 +56,42 @@ fun main() {
         config.registerPlugin(micrometerPlugin)
 
     }.apply {
-        exception(Exception::class.java) { e, ctx -> e.printStackTrace() }
-        error(HttpStatus.NOT_FOUND) { ctx -> ctx.json("not found") }
+        exception(ApiException::class.java) { e, ctx ->
+            val correlation = java.util.UUID.randomUUID().toString()
+            val body = ErrorResponse(
+                status = e.status.code,
+                error = e.status.message,
+                message = e.message,
+                details = e.details,
+                correlationId = correlation
+            )
+            ctx.status(e.status).json(body)
+        }
+        exception(org.valiktor.ConstraintViolationException::class.java) { e, ctx ->
+            val api = ErrorTranslator.fromThrowable(e) as ApiException
+            val correlation = java.util.UUID.randomUUID().toString()
+            val body = ErrorResponse(
+                status = api.status.code,
+                error = api.status.message,
+                message = api.message,
+                details = api.details,
+                correlationId = correlation
+            )
+            ctx.status(api.status).json(body)
+        }
+        exception(Exception::class.java) { e, ctx ->
+            val api = ErrorTranslator.fromThrowable(e)
+            val correlation = java.util.UUID.randomUUID().toString()
+            val body = ErrorResponse(
+                status = api.status.code,
+                error = api.status.message,
+                message = api.message,
+                details = api.details,
+                correlationId = correlation
+            )
+            ctx.status(api.status).json(body)
+        }
+        error(HttpStatus.NOT_FOUND) { ctx -> ctx.json(mapOf("status" to 404, "error" to "Not Found")) }
     }.start(7070)
 
     //Registering the routes
