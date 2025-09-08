@@ -11,7 +11,7 @@ COPY settings.gradle build.gradle ./
 COPY src src
 
 # Build the application (production)
-RUN ./gradlew --no-daemon clean build
+RUN ./gradlew --no-daemon -I gradle/local-init.gradle clean build
 
 
 

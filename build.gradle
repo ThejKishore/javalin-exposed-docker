@@ -10,6 +10,8 @@ group = 'com.tk.learn'
 version = '1.0-SNAPSHOT'
 
 repositories {
+    // Prefer project-local Maven repo first (populated by previous builds or CI cache)
+    maven { url = uri(".maven-repo") }
     mavenCentral()
 }
 
@@ -80,7 +82,7 @@ shadowJar {
     mergeServiceFiles()
     manifest {
         attributes(
-                'Main-Class': 'com.tk.learn.MainKt'
+                'Main-Class': 'com.tk.learn.bootstrap.MainKt'
         )
     }
 }

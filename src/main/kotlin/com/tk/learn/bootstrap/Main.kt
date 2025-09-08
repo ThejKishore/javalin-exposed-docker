@@ -1,7 +1,14 @@
-package com.tk.learn
+package com.tk.learn.bootstrap
 
 import com.sksamuel.hoplite.ConfigLoaderBuilder
 import com.sksamuel.hoplite.addResourceSource
+import com.tk.learn.infrastructure.AppJdbi
+import com.tk.learn.infrastructure.registerMetrics
+import com.tk.learn.infrastructure.registerPrometheus
+import com.tk.learn.shared.ApiException
+import com.tk.learn.shared.AppConfig
+import com.tk.learn.shared.ErrorResponse
+import com.tk.learn.shared.ErrorTranslator
 import io.javalin.Javalin
 import io.javalin.http.HttpStatus
 import io.javalin.openapi.OpenApiInfo

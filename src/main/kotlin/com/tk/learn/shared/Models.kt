@@ -1,4 +1,4 @@
-package com.tk.learn
+package com.tk.learn.shared
 
 import org.valiktor.functions.*
 import org.valiktor.validate

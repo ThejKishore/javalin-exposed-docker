@@ -1,4 +1,4 @@
-package com.tk.learn
+package com.tk.learn.infrastructure
 
 import io.javalin.micrometer.MicrometerPlugin
 import io.micrometer.core.instrument.binder.jvm.ClassLoaderMetrics

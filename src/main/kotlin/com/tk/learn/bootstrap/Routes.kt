@@ -1,5 +1,7 @@
-package com.tk.learn
+package com.tk.learn.bootstrap
 
+import com.tk.learn.kube.KubeRoutes
+import com.tk.learn.users.UserRoutes
 import io.javalin.Javalin
 import io.javalin.http.Context
 import io.micrometer.prometheusmetrics.PrometheusMeterRegistry

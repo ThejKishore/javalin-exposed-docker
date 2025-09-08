@@ -1,8 +1,8 @@
-package com.tk.learn
+package com.tk.learn.shared
 
 import io.javalin.http.HttpStatus
-import org.jdbi.v3.core.statement.UnableToExecuteStatementException
 import org.jdbi.v3.core.statement.UnableToCreateStatementException
+import org.jdbi.v3.core.statement.UnableToExecuteStatementException
 import org.valiktor.ConstraintViolationException
 
 // Sealed exception hierarchy for API errors

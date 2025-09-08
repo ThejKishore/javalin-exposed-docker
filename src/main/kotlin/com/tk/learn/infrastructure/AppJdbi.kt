@@ -1,5 +1,6 @@
-package com.tk.learn
+package com.tk.learn.infrastructure
 
+import com.tk.learn.shared.DatabaseConfig
 import org.jdbi.v3.core.Jdbi
 import org.jdbi.v3.core.kotlin.KotlinPlugin
 

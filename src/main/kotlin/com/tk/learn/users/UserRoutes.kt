@@ -1,7 +1,9 @@
-package com.tk.learn
+package com.tk.learn.users
 
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.fasterxml.jackson.module.kotlin.readValue
+import com.tk.learn.infrastructure.AppJdbi
+import com.tk.learn.shared.*
 import io.javalin.http.Context
 import io.javalin.openapi.*
 import org.jdbi.v3.core.Handle
@@ -29,12 +31,13 @@ object UserRoutes {
         if (id == null) {
             throw ApiException.BadRequest("Invalid id")
         }
+        println("[DEBUG_LOG] getUserById called with id=$id")
         val user = AppJdbi.getJdbi().withHandle<User?,Exception> {
-            it.createQuery("select id as userId, name from users where id = :id")
-                    .bind("id", id)
-                    .mapTo<User>()
-                    .findOne()
-                    .orElse(null)
+            val users = it.createQuery("select id as userId, name from users")
+                .mapTo<User>()
+                .list()
+            println("[DEBUG_LOG] getUserById users in DB: " + users.joinToString { u -> "${u.userId}:${u.name}" })
+            users.find { u -> u.userId == id }
             }
         if (user == null)
             throw ApiException.NotFound("User not found")
