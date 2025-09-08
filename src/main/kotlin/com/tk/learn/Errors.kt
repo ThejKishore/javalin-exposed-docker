@@ -55,9 +55,11 @@ object ErrorTranslator {
         is ApiException -> t
         is ConstraintViolationException -> ApiException.Validation(
             details = t.constraintViolations.map { v ->
+                // Valiktor doesn't expose a fully formatted message by default here; use constraint name as message
+                val friendly = v.constraint.name
                 ValidationError(
                     field = v.property,
-                    message = v.constraint.name, 
+                    message = friendly,
                     constraint = v.constraint.name
                 )
             }
