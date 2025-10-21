@@ -1,0 +1,23 @@
+// This init script forces Gradle to use a project-local GRADLE_USER_HOME under .gradle-local
+// and configures a local Maven repository directory in the project (.maven-repo)
+
+def projectRoot = new File(System.getProperty('user.dir'))
+def localGradleUserHome = new File(projectRoot, '.gradle-local')
+System.setProperty('gradle.user.home', localGradleUserHome.absolutePath)
+
+// Create directories if missing
+localGradleUserHome.mkdirs()
+new File(projectRoot, '.maven-repo').mkdirs()
+
+settingsEvaluated { Settings s ->
+    // Also ensure dependencyResolutionManagement repositories include the local repo if used
+}
+
+allprojects { p ->
+    // Configure builds to publish/resolve from project-local Maven repo in addition to mavenCentral
+    p.repositories { RepositoryHandler repos ->
+        maven { url = p.rootProject.file('.maven-repo').toURI() }
+        // mavenLocal() // optional
+        // mavenCentral() // keep existing from build.gradle.kts; do not duplicate here
+    }
+}
