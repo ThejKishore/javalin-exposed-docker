@@ -1,13 +1,15 @@
+import com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar
+
 plugins {
-    id 'java'
-    id 'org.jetbrains.kotlin.jvm' version '2.2.20-RC2'
-    id 'com.github.johnrengelman.shadow' version '8.1.1'
-    id "org.jetbrains.kotlin.kapt" version "2.2.20-RC2"
-    id "io.spring.dependency-management" version "1.1.0"
+    id("java")
+    kotlin("jvm") version "2.2.20-RC2"
+    id("com.github.johnrengelman.shadow") version "8.1.1"
+    kotlin("kapt") version "2.2.20-RC2"
+    id("io.spring.dependency-management") version "1.1.0"
 }
 
-group = 'com.tk.learn'
-version = '1.0-SNAPSHOT'
+group = "com.tk.learn"
+version = "1.0-SNAPSHOT"
 
 repositories {
     // Prefer project-local Maven repo first (populated by previous builds or CI cache)
@@ -17,7 +19,7 @@ repositories {
 
 java {
     toolchain {
-        languageVersion = JavaLanguageVersion.of(21)
+        languageVersion.set(JavaLanguageVersion.of(21))
     }
 }
 
@@ -25,8 +27,8 @@ kotlin {
     jvmToolchain(21)
 }
 
-def javalinVer = "6.7.0"
-def openapi = "6.7.0-1"
+val javalinVer = "6.7.0"
+val openapi = "6.7.0-1"
 
 
 dependencies {
@@ -44,11 +46,11 @@ dependencies {
     runtimeOnly("com.h2database:h2:2.2.224")
 
     // Config from hoplite
-    implementation "com.sksamuel.hoplite:hoplite-core:2.9.0"
-    implementation "com.sksamuel.hoplite:hoplite-yaml:2.9.0"
+    implementation("com.sksamuel.hoplite:hoplite-core:2.9.0")
+    implementation("com.sksamuel.hoplite:hoplite-yaml:2.9.0")
 
     //Validator
-    implementation "org.valiktor:valiktor-core:0.12.0"
+    implementation("org.valiktor:valiktor-core:0.12.0")
 
     //OpenApi3
     kapt("io.javalin.community.openapi:openapi-annotation-processor:$openapi")
@@ -66,26 +68,30 @@ dependencies {
     implementation("com.fasterxml.jackson.module:jackson-module-kotlin:2.17.2")
 
     // Test
-    testImplementation platform('org.junit:junit-bom:5.10.0')
-    testImplementation 'org.junit.jupiter:junit-jupiter'
-    testImplementation "io.mockk:mockk:1.13.11"
-    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+    testImplementation(platform("org.junit:junit-bom:5.10.0"))
+    testImplementation("org.junit.jupiter:junit-jupiter")
+    testImplementation("io.mockk:mockk:1.13.11")
+    testRuntimeOnly("org.junit.platform:junit-platform-launcher")
 }
 
-test {
+tasks.test {
     useJUnitPlatform()
 }
 
 // Configure ShadowJar to build a fat jar including all dependencies
-shadowJar {
-    archiveClassifier.set('all')
+tasks.named<ShadowJar>("shadowJar") {
+    archiveClassifier.set("all")
     mergeServiceFiles()
     manifest {
         attributes(
-                'Main-Class': 'com.tk.learn.bootstrap.MainKt'
+            mapOf(
+                "Main-Class" to "com.tk.learn.bootstrap.MainKt"
+            )
         )
     }
 }
 
 // Optionally, make the standard build also assemble the shadow jar
-build.dependsOn shadowJar
+tasks.named("build") {
+    dependsOn(tasks.named("shadowJar"))
+}

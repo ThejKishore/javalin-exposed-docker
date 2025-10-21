@@ -7,7 +7,7 @@ WORKDIR /app
 # Leverage Gradle wrapper
 COPY gradlew gradlew
 COPY gradle gradle
-COPY settings.gradle build.gradle ./
+COPY settings.gradle.kts build.gradle ./
 COPY src src
 
 # Build the application (production)
