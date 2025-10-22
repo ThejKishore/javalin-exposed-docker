@@ -1,97 +1,13 @@
-import com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar
+// Root aggregator for multi-module build
 
-plugins {
-    id("java")
-    kotlin("jvm") version "2.2.20-RC2"
-    id("com.github.johnrengelman.shadow") version "8.1.1"
-    kotlin("kapt") version "2.2.20-RC2"
-    id("io.spring.dependency-management") version "1.1.0"
-}
+allprojects {
+    group = "com.tk.learn"
+    version = "1.0-SNAPSHOT"
 
-group = "com.tk.learn"
-version = "1.0-SNAPSHOT"
-
-repositories {
-    // Prefer project-local Maven repo first (populated by previous builds or CI cache)
-    maven { url = uri(".maven-repo") }
-    mavenCentral()
-}
-
-java {
-    toolchain {
-        languageVersion.set(JavaLanguageVersion.of(21))
+    repositories {
+        maven { url = uri(".maven-repo") }
+        mavenCentral()
     }
 }
 
-kotlin {
-    jvmToolchain(21)
-}
-
-val javalinVer = "6.7.0"
-val openapi = "6.7.0-1"
-
-
-dependencies {
-    implementation("io.javalin:javalin:$javalinVer")
-    implementation("org.slf4j:slf4j-simple:2.0.16")
-
-    // Kotlin stdlib
-    implementation("org.jetbrains.kotlin:kotlin-stdlib:2.2.20-RC2")
-
-    implementation(platform("org.jdbi:jdbi3-bom:3.49.5"))
-    implementation("org.jdbi:jdbi3-core")
-    implementation("org.jdbi:jdbi3-kotlin")
-
-    // H2 Database
-    runtimeOnly("com.h2database:h2:2.2.224")
-
-    // Config from hoplite
-    implementation("com.sksamuel.hoplite:hoplite-core:2.9.0")
-    implementation("com.sksamuel.hoplite:hoplite-yaml:2.9.0")
-
-    //Validator
-    implementation("org.valiktor:valiktor-core:0.12.0")
-
-    //OpenApi3
-    kapt("io.javalin.community.openapi:openapi-annotation-processor:$openapi")
-
-    implementation("io.javalin.community.openapi:javalin-openapi-plugin:$openapi") // for /openapi route with JSON scheme
-    implementation("io.javalin.community.openapi:javalin-swagger-plugin:$openapi") // for Swagger UI
-    implementation("io.javalin.community.openapi:javalin-redoc-plugin:$openapi")
-
-    //Micrometer and prometheus
-    implementation("io.javalin:javalin-micrometer:$javalinVer")
-    implementation("io.micrometer:micrometer-registry-prometheus:1.15.3")
-
-    // JSON
-    implementation("com.fasterxml.jackson.core:jackson-databind:2.17.2")
-    implementation("com.fasterxml.jackson.module:jackson-module-kotlin:2.17.2")
-
-    // Test
-    testImplementation(platform("org.junit:junit-bom:5.10.0"))
-    testImplementation("org.junit.jupiter:junit-jupiter")
-    testImplementation("io.mockk:mockk:1.13.11")
-    testRuntimeOnly("org.junit.platform:junit-platform-launcher")
-}
-
-tasks.test {
-    useJUnitPlatform()
-}
-
-// Configure ShadowJar to build a fat jar including all dependencies
-tasks.named<ShadowJar>("shadowJar") {
-    archiveClassifier.set("all")
-    mergeServiceFiles()
-    manifest {
-        attributes(
-            mapOf(
-                "Main-Class" to "com.tk.learn.bootstrap.MainKt"
-            )
-        )
-    }
-}
-
-// Optionally, make the standard build also assemble the shadow jar
-tasks.named("build") {
-    dependsOn(tasks.named("shadowJar"))
-}
+// No plugins or source code in root project; see subprojects :app, :shared, :user

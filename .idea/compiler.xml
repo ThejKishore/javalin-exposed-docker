@@ -4,6 +4,15 @@
     <bytecodeTargetLevel target="21" />
   </component>
   <component name="JavacSettings">
-    <option name="ADDITIONAL_OPTIONS_STRING" value="-proc:none" />
+    <option name="ADDITIONAL_OPTIONS_OVERRIDE">
+      <module name="javalin-example.app" options="-proc:none" />
+      <module name="javalin-example.app.main" options="-proc:none" />
+      <module name="javalin-example.app.test" options="-proc:none" />
+      <module name="javalin-example.main" options="-proc:none" />
+      <module name="javalin-example.test" options="-proc:none" />
+      <module name="javalin-example.user" options="-proc:none" />
+      <module name="javalin-example.user.main" options="-proc:none" />
+      <module name="javalin-example.user.test" options="-proc:none" />
+    </option>
   </component>
 </project>
