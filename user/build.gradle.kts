@@ -26,6 +26,9 @@ dependencies {
 
     implementation(libs.javalin)
 
+    // Dependency Injection (Koin)
+    implementation(libs.koinCore)
+
     // JDBI used directly in user routes
     implementation(platform(libs.jdbiBom))
     implementation(libs.jdbiCore)

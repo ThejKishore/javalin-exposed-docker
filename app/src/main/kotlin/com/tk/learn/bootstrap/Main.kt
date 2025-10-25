@@ -2,11 +2,11 @@ package com.tk.learn.bootstrap
 
 import com.sksamuel.hoplite.ConfigLoaderBuilder
 import com.sksamuel.hoplite.addResourceSource
-import com.tk.learn.infrastructure.AppJdbi
 import com.tk.learn.infrastructure.registerMetrics
 import com.tk.learn.infrastructure.registerPrometheus
 import com.tk.learn.shared.ApiException
 import com.tk.learn.shared.AppConfig
+import com.tk.learn.shared.DatabaseConfig
 import com.tk.learn.shared.ErrorResponse
 import com.tk.learn.shared.ErrorTranslator
 import io.javalin.Javalin
@@ -15,6 +15,11 @@ import io.javalin.openapi.OpenApiInfo
 import io.javalin.openapi.plugin.OpenApiPlugin
 import io.javalin.openapi.plugin.redoc.ReDocPlugin
 import io.javalin.openapi.plugin.swagger.SwaggerPlugin
+import org.jdbi.v3.core.Jdbi
+import org.jdbi.v3.core.kotlin.KotlinPlugin
+import org.koin.core.context.startKoin
+import org.koin.dsl.module
+import org.koin.logger.slf4jLogger
 
 val log = org.slf4j.LoggerFactory.getLogger("Main")!!
 
@@ -26,11 +31,33 @@ fun main() {
         .build()
         .loadConfigOrThrow<AppConfig>()
 
+    // Start Koin and provide config + Jdbi
+    val appModule = module {
+        single { appConfig }
+        single<DatabaseConfig> { appConfig.database }
+        single<Jdbi> {
+            val db = get<DatabaseConfig>()
+            val cfg = com.zaxxer.hikari.HikariConfig().apply {
+                jdbcUrl = db.url
+                username = db.username
+                password = db.password
+                driverClassName = db.driver
+                maximumPoolSize = 10
+                minimumIdle = 2
+                poolName = "app-hikari-pool"
+            }
+            val ds = com.zaxxer.hikari.HikariDataSource(cfg)
+            Jdbi.create(ds).also { it.installPlugin(KotlinPlugin()) }
+        }
+    }
+    val koinApp = startKoin {
+        slf4jLogger()
+        modules(appModule)
+    }
 
-    log.info("Config is ${appConfig.database} ")
-    //Initializing the h2 database using exposed kotlin framework
-    AppJdbi.init(appConfig.database)
-    AppJdbi.createSchema()
+    // Create schema and seed data using injected Jdbi
+    val jdbi = koinApp.koin.get<Jdbi>()
+    createSchemaIfNeeded(jdbi)
 
     //Registering the promethus and setting it in MicrometerPlugin
     val registry = registerPrometheus()
@@ -113,4 +140,21 @@ fun main() {
     log.info("Check out Prometheus scrap endpoint http://localhost:7070/javalin/api/liveness")
     log.info("Check out Prometheus scrap endpoint http://localhost:7070/javalin/api/readiness")
 
+}
+
+private fun createSchemaIfNeeded(jdbi: Jdbi) = jdbi.useHandle<Exception> {
+    it.execute("create table if not exists users (id INT generated always as identity primary key, name varchar(255) not null)")
+    val count = it.createQuery("select count(*) from users").mapTo(Int::class.java).one()
+    if (count == 0) {
+        it.execute("INSERT INTO users (name) VALUES (?)",  "Alice")
+        it.createUpdate("INSERT INTO users (name) VALUES (?)")
+            .bind(0, "Bob")
+            .execute()
+        it.createUpdate("INSERT INTO users (name) VALUES (:name)")
+            .bind("name", "Clarice")
+            .execute()
+        it.createUpdate("INSERT INTO users (name) VALUES (:name)")
+            .bind("name", "David")
+            .execute()
+    }
 }

@@ -7,17 +7,21 @@ WORKDIR /app
 # Leverage Gradle wrapper
 COPY gradlew gradlew
 COPY gradle gradle
-COPY settings.gradle.kts build.gradle ./
-COPY src src
+COPY settings.gradle.kts build.gradle.kts ./
+# Copy multi-module sources and build scripts
+COPY app app
+COPY shared shared
+COPY user user
+COPY gradle.properties gradle.properties
 
 # Build the application (production)
-RUN ./gradlew --no-daemon -I gradle/local-init.gradle clean build
+RUN chmod +x gradlew && ./gradlew --no-daemon -I gradle/local-init.gradle clean build
 
 
 
 FROM eclipse-temurin:21-jre AS runtime
-# Copy the fat jar built by shadowJar from the build stage
-COPY --from=build /app/build/libs/javalin-example-*-all.jar /app.jar
+# Copy the fat jar built by shadowJar from the build stage (app module)
+COPY --from=build /app/app/build/libs/app-*-all.jar /app.jar
 # This is the port that your javalin application will listen on
 EXPOSE 7070
 ENTRYPOINT ["java", "-jar", "/app.jar"]

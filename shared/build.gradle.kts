@@ -26,6 +26,9 @@ dependencies {
     api(libs.jdbiCore)
     api(libs.jdbiKotlin)
 
+    // HikariCP pool used by AppJdbi
+    implementation(libs.hikariCp)
+
     // Config models (AppConfig, DatabaseConfig) validated via valiktor
     implementation(libs.hopliteCore)
     implementation(libs.hopliteYaml)

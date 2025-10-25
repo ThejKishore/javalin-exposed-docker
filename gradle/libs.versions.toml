@@ -13,6 +13,8 @@ micrometerProm = "1.15.3"
 jdbi = "3.49.5"
 shadow = "8.1.1"
 springDepMgmt = "1.1.0"
+koin = "3.5.6"
+hikari = "5.1.0"
 
 [libraries]
 # Core libs
@@ -31,6 +33,11 @@ valiktorCore = { module = "org.valiktor:valiktor-core", version.ref = "valiktor"
 jdbiBom = { module = "org.jdbi:jdbi3-bom", version.ref = "jdbi" }
 jdbiCore = { module = "org.jdbi:jdbi3-core" }
 jdbiKotlin = { module = "org.jdbi:jdbi3-kotlin" }
+hikariCp = { module = "com.zaxxer:HikariCP", version.ref = "hikari" }
+
+# DI
+koinCore = { module = "io.insert-koin:koin-core", version.ref = "koin" }
+koinLoggerSlf4j = { module = "io.insert-koin:koin-logger-slf4j", version.ref = "koin" }
 
 # Metrics
 micrometerPrometheus = { module = "io.micrometer:micrometer-registry-prometheus", version.ref = "micrometerProm" }

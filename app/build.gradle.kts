@@ -34,6 +34,13 @@ dependencies {
     implementation(libs.javalin)
     implementation(libs.slf4jSimple)
 
+    // Dependency Injection (Koin)
+    implementation(libs.koinCore)
+    implementation(libs.koinLoggerSlf4j)
+
+    // HikariCP Connection Pool
+    implementation(libs.hikariCp)
+
     // Kotlin stdlib (explicit)
     implementation(libs.kotlinStdlib)
 

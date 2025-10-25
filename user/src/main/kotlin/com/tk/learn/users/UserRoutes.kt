@@ -2,16 +2,22 @@ package com.tk.learn.users
 
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.fasterxml.jackson.module.kotlin.readValue
-import com.tk.learn.infrastructure.AppJdbi
 import com.tk.learn.shared.*
 import io.javalin.http.Context
 import io.javalin.openapi.*
 import org.jdbi.v3.core.Handle
+import org.jdbi.v3.core.Jdbi
 import org.jdbi.v3.core.kotlin.mapTo
+import org.koin.core.context.GlobalContext
+import com.tk.learn.infrastructure.AppJdbi
 
 private val json = jacksonObjectMapper()
 
 object UserRoutes {
+    private val jdbi: Jdbi by lazy {
+        val ctx = GlobalContext.getOrNull()
+        ctx?.let { it.get<Jdbi>() } ?: AppJdbi.getJdbi()
+    }
 
     @OpenApi(
         path = "/users/{id}",
@@ -27,12 +33,9 @@ object UserRoutes {
         ]
     )
     fun getUserById(ctx: Context) {
-        val id = ctx.pathParam("id").toIntOrNull()
-        if (id == null) {
-            throw ApiException.BadRequest("Invalid id")
-        }
+        val id = ctx.pathParam("id").toIntOrNull() ?: throw ApiException.BadRequest("Invalid id")
         println("[DEBUG_LOG] getUserById called with id=$id")
-        val user = AppJdbi.getJdbi().withHandle<User?,Exception> {
+        val user = jdbi.withHandle<User?,Exception> {
             val users = it.createQuery("select id as userId, name from users")
                 .mapTo<User>()
                 .list()
@@ -65,7 +68,7 @@ object UserRoutes {
         if (name.isBlank()) {
             throw ApiException.Validation(details = listOf(ValidationError("name", "must not be blank", "NotBlank")))
         }
-        val user = AppJdbi.getJdbi().withHandle <ResultCodeUser,Exception> { h -> createUserDb(h, name) }
+        val user = jdbi.withHandle <ResultCodeUser,Exception> { h -> createUserDb(h, name) }
         ctx.status(201).json(user)
     }
 
@@ -82,8 +85,7 @@ object UserRoutes {
         ]
     )
     fun updateUser(ctx: Context) {
-        val id = ctx.pathParam("id").toIntOrNull()
-        if (id == null) { throw ApiException.BadRequest("Invalid id") }
+        val id = ctx.pathParam("id").toIntOrNull() ?: throw ApiException.BadRequest("Invalid id")
         val body = try {
             json.readValue<UpdateUserRequest>(ctx.body())
         } catch (e: Exception) {
@@ -93,7 +95,7 @@ object UserRoutes {
         if (name.isBlank()) {
             throw ApiException.Validation(details = listOf(ValidationError("name", "must not be blank", "NotBlank")))
         }
-        val updated = AppJdbi.getJdbi().withHandle<ResultCode, Exception> { h -> updateUser(h, id, name) }
+        val updated = jdbi.withHandle<ResultCode, Exception> { h -> updateUser(h, id, name) }
         if (updated.code <= 0)
             throw ApiException.NotFound("User not found")
         else
@@ -112,8 +114,7 @@ object UserRoutes {
         ]
     )
     fun deleteUser(ctx: Context) {
-        val id = ctx.pathParam("id").toIntOrNull()
-        if (id == null) { throw ApiException.BadRequest("Invalid id") }
+        val id = ctx.pathParam("id").toIntOrNull() ?: throw ApiException.BadRequest("Invalid id")
         val deleted = AppJdbi.getJdbi().withHandle<ResultCode, Exception> { h -> deleteUser(h, id) }
         if (deleted.code <= 0)
             throw ApiException.NotFound("User not found")
@@ -131,7 +132,7 @@ object UserRoutes {
         ]
     )
     fun fetchUsers(ctx: Context) {
-        ctx.json(AppJdbi.getJdbi().withHandle <List<User>,Exception> {
+        ctx.json(jdbi.withHandle <List<User>,Exception> {
                     it.createQuery("select id as userId, name from users")
                         .mapTo<User>()
                         .list()
