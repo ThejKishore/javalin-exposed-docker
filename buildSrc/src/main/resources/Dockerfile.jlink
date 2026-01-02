@@ -1,72 +1,27 @@
-## Multi-module Spring Boot runtime with jlink minimal JRE
+# Multi-stage build with jlink custom runtime
 
-# -----------------------------
-# Stage 1: Obtain dependency information from the host-built JAR
-# -----------------------------
-FROM ${BUILD_BASE_IMAGE} AS jre-builder-deps
-WORKDIR /work
-
-# Accept path to host-built jar (relative to build context). Default matches Gradle bootJar output
-ARG APP_JAR=build/libs/*boot.jar
-
-# Copy the executable Spring Boot jar from the build context
-COPY ${APP_JAR} /work/app.jar
-
-# Extract module dependencies required for building a custom JRE
-RUN jdeps \
-      --multi-release 21 \
-      --print-module-deps \
-      --ignore-missing-deps \
-      /work/app.jar > /work/deps.txt
-
-# -----------------------------
-# Stage 2: Build the custom JRE with jlink
-# -----------------------------
-FROM ${BUILD_BASE_IMAGE} AS jre-builder
-WORKDIR /work
-
-# Bring in app jar and computed deps
-COPY --from=jre-builder-deps /work/app.jar /work/app.jar
-COPY --from=jre-builder-deps /work/deps.txt /work/deps.txt
-
-# Include minimal extra modules known to be required by Spring Boot + Tomcat
-# - jdk.crypto.ec: EC crypto for TLS
-# - java.desktop: java.beans.PropertyEditorSupport used by Boot binder
-# - java.management: JMX types used by Tomcat
-# - java.logging: java.util.logging required by Tomcat JULI
-# - java.naming: javax.naming.* used by Tomcat JNDI
-# - java.security.jgss: org.ietf.jgss.* used by Tomcat default realm / GSS-API
-# - java.instrument: java.lang.instrument.* needed by Tomcat/Boot at startup on JREs without tools
-# - java.sql: JDBC APIs used by Spring/JDBC/H2
-# - jdk.unsupported: sun.misc.Unsafe used transitively by Objenesis/CGLIB
-RUN echo "jdk.crypto.ec,java.desktop,java.management,java.logging,java.naming,java.security.jgss,java.instrument,java.sql,jdk.unsupported" > /work/extras.txt \
- && MODS=$(cat /work/deps.txt) \
- && EXTRAS=$(tr -d '\n' < /work/extras.txt) \
- && jlink \
-        --add-modules ${MODS},${EXTRAS} \
-        --no-header-files \
-        --no-man-pages \
-        --strip-debug \
-        --compress=2 \
-        --output /jre
-
-# -----------------------------
-# Stage 3: Minimal runtime image (distroless, non-root)
-# -----------------------------
-FROM ${RUNTIME_BASE_IMAGE} AS runtime-base
-ENV TZ=UTC
+# 1) Build stage: use JDK 21 to build the app
+FROM eclipse-temurin:21-jdk AS build
 WORKDIR /app
 
-# Copy custom JRE and application artifact
-COPY --from=jre-builder /jre /opt/jre
-ENV PATH=/opt/jre/bin:$PATH
+# Leverage Gradle wrapper
+COPY gradlew gradlew
+COPY gradle gradle
+COPY settings.gradle.kts build.gradle.kts ./
+# Copy multi-module sources and build scripts
+COPY app app
+COPY shared shared
+COPY user user
+COPY gradle.properties gradle.properties
 
-# Accept path to host-built jar again for the final image copy
-ARG APP_JAR=build/libs/*.jar
-COPY ${APP_JAR} /app/app.jar
+# Build the application (production)
+RUN chmod +x gradlew && ./gradlew --no-daemon -I gradle/local-init.gradle clean build
 
-EXPOSE 8080
-USER nonroot
 
-# Keep entrypoint simple; container memory limits are respected by JDK 21
-ENTRYPOINT ["java","-XX:MaxRAMPercentage=75.0","-jar","/app/app.jar"]
+
+FROM eclipse-temurin:21-jre AS runtime
+# Copy the fat jar built by shadowJar from the build stage (app module)
+COPY --from=build /app/app/build/libs/app-*-all.jar /app.jar
+# This is the port that your javalin application will listen on
+EXPOSE 7070
+ENTRYPOINT ["java", "-jar", "/app.jar"]
