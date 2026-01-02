@@ -109,7 +109,7 @@ val dockerBuildImage = tasks.register<Exec>("dockerBuildImage") {
     group = "docker"
     description = "Builds Docker image using the generated Dockerfile"
     // Ensure the host jar exists before building the image
-    dependsOn(":bootJar")
+    dependsOn(":shadowJar")
     dependsOn(generateDockerfile)
     dependsOn(validateDocker)
     workingDir = project.rootDir
@@ -120,7 +120,7 @@ val dockerBuildImage = tasks.register<Exec>("dockerBuildImage") {
         val libsDir = project.layout.projectDirectory.dir("build/libs").asFile
         val jars = libsDir.listFiles { f -> f.isFile && f.name.endsWith(".jar") }?.toList() ?: emptyList()
         if (jars.isEmpty()) {
-            throw GradleException("No JAR found under build/libs. Run ':bootJar' first or check the build.")
+            throw GradleException("No JAR found under build/libs. Run ':shadowJar' first or check the build.")
         }
         commandLine(
             dockerExecutable.get(),

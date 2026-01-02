@@ -2,7 +2,8 @@ version: "3.9"
 services:
   app:
     build: .
-    image: javalin-example:0.0.3
+    image: javalin-example:latest
+    container_name: javalin-example-app
     ports:
       - "7070:7070"
     environment:

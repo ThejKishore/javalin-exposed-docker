@@ -1,27 +1,37 @@
-# Multi-stage build with jlink custom runtime
-
-# 1) Build stage: use JDK 21 to build the app
-FROM eclipse-temurin:21-jdk AS build
+# 1) JRE builder stage: create a custom slim JRE
+FROM eclipse-temurin:21-jdk-jammy AS jre-builder
 WORKDIR /app
 
-# Leverage Gradle wrapper
-COPY gradlew gradlew
-COPY gradle gradle
-COPY settings.gradle.kts build.gradle.kts ./
-# Copy multi-module sources and build scripts
-COPY app app
-COPY shared shared
-COPY user user
-COPY gradle.properties gradle.properties
+COPY ./build/libs/*-all.jar app.jar
 
-# Build the application (production)
-RUN chmod +x gradlew && ./gradlew --no-daemon -I gradle/local-init.gradle clean build
+# Extract module dependencies
+RUN jdeps \
+    --ignore-missing-deps \
+    --print-module-deps \
+    --multi-release 21 \
+    --recursive \
+    app.jar > modules.txt
 
+# Create custom JRE
+RUN jlink \
+    --add-modules $(cat modules.txt),jdk.crypto.ec,jdk.crypto.cryptoki \
+    --strip-debug \
+    --no-man-pages \
+    --no-header-files \
+    --compress=2 \
+    --output /javaruntime
 
+# 3) Runtime stage: use a slim base and the custom JRE
+FROM gcr.io/distroless/base-debian12:nonroot AS runtime-base
 
-FROM eclipse-temurin:21-jre AS runtime
-# Copy the fat jar built by shadowJar from the build stage (app module)
-COPY --from=build /app/app/build/libs/app-*-all.jar /app.jar
+ENV JAVA_HOME=/opt/java/openjdk
+ENV PATH="${JAVA_HOME}/bin:${PATH}"
+COPY --from=jre-builder /javaruntime $JAVA_HOME
+
+WORKDIR /app
+# Copy the fat jar built by shadowJar from the build stage
+COPY ./build/libs/*-all.jar /app.jar
+
 # This is the port that your javalin application will listen on
 EXPOSE 7070
 ENTRYPOINT ["java", "-jar", "/app.jar"]

@@ -4,6 +4,7 @@ plugins {
     id("javalin-lib")
     id("consolidatedJacoco")
     id("versions")
+    id("docker")
     alias(libs.plugins.shadow)
 }
 
