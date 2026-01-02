@@ -14,4 +14,5 @@ dependencyResolutionManagement {
 
 rootProject.name = "javalin-example"
 
-include(":app", ":shared", ":user")
+include(":shared")
+include( ":user")

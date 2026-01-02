@@ -16,6 +16,10 @@ springDepMgmt = "1.1.0"
 koin = "3.5.6"
 hikari = "5.1.0"
 
+sonarlint = "7.0.0-rc-4"
+freefair-aggregate-jacoco = "9.0.0"
+palantir = "6.66.0"
+
 [libraries]
 # Core libs
 javalin = { module = "io.javalin:javalin", version.ref = "javalin" }
@@ -62,6 +66,13 @@ h2 = { module = "com.h2database:h2", version.ref = "h2" }
 
 # Kotlin stdlib (keep explicit to be safe)
 kotlinStdlib = { module = "org.jetbrains.kotlin:kotlin-stdlib", version.ref = "kotlin" }
+
+# plugins library
+sonarlint-plugin= { module = "name.remal.sonarlint:name.remal.sonarlint.gradle.plugin", version.ref = "sonarlint" }
+freefair-aggregate-jacoco-plugin = { module = "io.freefair.aggregate-jacoco-report:io.freefair.aggregate-jacoco-report.gradle.plugin", version.ref = "freefair-aggregate-jacoco" }
+palantir-checkstyle-plugin = { module = "com.palantir.baseline-checkstyle:com.palantir.baseline-checkstyle.gradle.plugin" , version.ref="palantir"}
+palantir-idea-plugin = { module = "com.palantir.baseline-checkstyle:com.palantir.baseline-checkstyle.gradle.plugin" , version.ref="palantir"}
+graalVm-plugin = { module = "org.graalvm.buildtools:native-gradle-plugin" , version="0.11.3"}
 
 [plugins]
 kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }
