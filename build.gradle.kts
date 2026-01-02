@@ -3,6 +3,7 @@ import com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar
 plugins {
     id("javalin-lib")
     id("consolidatedJacoco")
+    id("versions")
     alias(libs.plugins.shadow)
 }
 
